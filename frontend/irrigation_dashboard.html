@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agriculture IoT · Irrigation Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/@iconify/iconify@3.1.0/dist/iconify.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, rgba(15, 23, 42, 0.88) 0%, rgba(30, 58, 138, 0.78) 50%, rgba(21, 128, 61, 0.82) 100%),
+                url('https://images.unsplash.com/photo-1625246333195-78d9c38ad449?w=1920&q=80') center/cover fixed;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(34, 197, 94, 0.12) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            padding-bottom: 160px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 10px 20px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px)
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0)
+            }
+        }
+
+        .header-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, rgba(249, 115, 22, 0.96) 0%, rgba(234, 88, 12, 0.96) 100%);
+            padding: 10px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            color: white;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+            font-weight: 700;
+        }
+
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        .top-stats {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(15px);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:nth-child(1) {
+            background: linear-gradient(135deg, rgba(34, 197, 94, 0.92), rgba(22, 163, 74, 0.92));
+        }
+
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.92), rgba(29, 78, 216, 0.92));
+        }
+
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.92), rgba(220, 38, 38, 0.92));
+        }
+
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, rgba(168, 85, 247, 0.92), rgba(126, 34, 206, 0.92));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            color: white;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1.5fr 1fr;
+            gap: 20px;
+        }
+
+        .card {
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(15px);
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(255, 255, 255, 0.6), rgba(255, 255, 255, 0.1));
+            border-radius: 18px 18px 0 0;
+        }
+
+        .card h2 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .weather-card {
+            background: linear-gradient(135deg, rgba(251, 146, 60, 0.93), rgba(249, 115, 22, 0.93));
+        }
+
+        .control-card {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.93), rgba(239, 68, 68, 0.93));
+        }
+
+        .camera-card {
+            background: linear-gradient(135deg, rgba(21, 128, 61, 0.93), rgba(22, 101, 52, 0.93));
+        }
+
+        .sensor-card {
+            background: linear-gradient(135deg, rgba(147, 51, 234, 0.93), rgba(126, 34, 206, 0.93));
+        }
+
+        .schedule-card {
+            background: linear-gradient(135deg, rgba(139, 92, 246, 0.93), rgba(109, 40, 217, 0.93));
+        }
+
+        .weather-info-grid {
+            display: grid;
+            gap: 10px;
+        }
+
+        .weather-item {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 12px 15px;
+            border-radius: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-section {
+            background: rgba(255, 255, 255, 0.22);
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .section-label {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 0.95em;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+            color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+        }
+
+        .mode-btn:not(.active) {
+            background: white;
+            color: #1e40af;
+        }
+
+        .mode-btn:not(.active):hover {
+            background: #f0f0f0;
+            transform: translateY(-2px);
+        }
+
+        .mode-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .switch {
+            width: 70px;
+            height: 36px;
+            background: #475569;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+            box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .switch.on {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .switch.off {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+
+        .switch.disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .switch-slider {
+            position: absolute;
+            top: 3px;
+            width: 30px;
+            height: 30px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+        }
+
+        .switch.on .switch-slider {
+            right: 3px;
+        }
+
+        .switch.off .switch-slider {
+            left: 3px;
+        }
+
+        .camera-container {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 320px;
+            border: 2px solid rgba(255, 255, 255, 0.25);
+            margin-bottom: 15px;
+            position: relative;
+            cursor: pointer;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .camera-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .camera-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .camera-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .start-btn {
+            background: linear-gradient(135deg, #10b981, #059669);
+            color: white;
+        }
+
+        .stop-btn {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+        }
+
+        .fullscreen-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .camera-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+        }
+
+        .field-gauges {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .gauge-circle {
+            aspect-ratio: 1;
+            border-radius: 50%;
+            border: 6px solid white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+            background: linear-gradient(135deg, #10b981, #059669);
+            transition: transform 0.3s;
+        }
+
+        .gauge-circle:hover {
+            transform: scale(1.05);
+        }
+
+        .gauge-circle:nth-child(2) {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        }
+
+        .gauge-circle:nth-child(3) {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+        }
+
+        .gauge-icon {
+            font-size: 2em;
+            color: white;
+            margin-bottom: 8px;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .gauge-value {
+            font-size: 2em;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.4);
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .sensor-item {
+            background: rgba(255, 255, 255, 0.28);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            transition: transform 0.3s;
+        }
+
+        .sensor-item:hover {
+            transform: translateY(-3px);
+        }
+
+        .sensor-icon {
+            font-size: 2em;
+            margin-bottom: 8px;
+            color: #fef3c7;
+        }
+
+        .sensor-value {
+            font-size: 1.8em;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 5px;
+        }
+
+        .sensor-label {
+            color: white;
+            font-weight: 600;
+            font-size: 0.85em;
+        }
+
+        .schedule-grid {
+            display: grid;
+            gap: 12px;
+        }
+
+        .schedule-item {
+            background: rgba(255, 255, 255, 0.22);
+            padding: 12px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .full-width-section {
+            grid-column: 1/-1;
+            margin-top: 20px;
+        }
+
+        .water-usage-container {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.93), rgba(3, 105, 161, 0.93));
+            border-radius: 18px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .water-usage-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .usage-stats {
+            display: flex;
+            gap: 30px;
+            flex-wrap: wrap;
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 800;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .chart-container {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 15px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .water-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 180px;
+            gap: 15px;
+            padding: 20px 0;
+        }
+
+        .chart-bar {
+            flex: 1;
+            background: linear-gradient(to top, #1e40af, #3b82f6);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            min-height: 20px;
+            transition: height 0.3s;
+            cursor: pointer;
+        }
+
+        .chart-bar:hover {
+            background: linear-gradient(to top, #1e40af, #60a5fa);
+            transform: scaleY(1.02);
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-size: 0.85em;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -30px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            color: white;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        .camera-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: black;
+            z-index: 9999;
+        }
+
+        .camera-modal.active {
+            display: flex;
+        }
+
+        .modal-video-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        #fullscreenVideo {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .modal-close-btn {
+            position: absolute;
+            top: 30px;
+            right: 30px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid white;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            z-index: 10000;
+            font-size: 1.5em;
+            transition: all 0.3s;
+        }
+
+        .modal-close-btn:hover {
+            background: rgba(239, 68, 68, 0.8);
+            transform: scale(1.1);
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.85));
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-top: 2px solid rgba(255, 255, 255, 0.1);
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(255, 255, 255, 0.5);
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 50%;
+            top: 12px;
+            left: 12px;
+            z-index: 0;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        .action-btn:nth-child(1) {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+
+        .action-btn:nth-child(2) {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+        }
+
+        .action-btn:nth-child(3) {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+        }
+
+        .action-btn:nth-child(4) {
+            background: linear-gradient(135deg, #b45309, #d97706);
+        }
+
+        .action-btn:nth-child(5) {
+            background: linear-gradient(135deg, #9333ea, #a855f7);
+        }
+
+        .action-icon-wrapper {
+            width: 45px;
+            height: 45px;
+            background: rgba(255, 255, 255, 0.25);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+            z-index: 1;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-icon {
+            font-size: 1.6em;
+            color: white;
+        }
+
+        .action-label {
+            color: white;
+            font-weight: 700;
+            font-size: 0.75em;
+            z-index: 1;
+            text-align: center;
+        }
+
+        @media (max-width:1200px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr
+            }
+
+            .top-stats {
+                grid-template-columns: repeat(2, 1fr)
+            }
+        }
+
+        @media (max-width:768px) {
+            .bottom-actions {
+                gap: 15px;
+                padding: 15px
+            }
+
+            .action-btn {
+                width: 80px;
+                height: 80px
+            }
+
+            .action-btn::before {
+                width: 60px;
+                height: 60px;
+                top: 9px;
+                left: 9px
+            }
+
+            .action-icon-wrapper {
+                width: 35px;
+                height: 35px
+            }
+
+            .action-icon {
+                font-size: 1.3em
+            }
+
+            .action-label {
+                font-size: 0.65em
+            }
+
+            .camera-controls {
+                grid-template-columns: 1fr
+            }
+        }
+
+        @media (max-width:480px) {
+            .bottom-actions {
+                gap: 10px
+            }
+
+            .action-btn {
+                width: 70px;
+                height: 70px
+            }
+
+            .action-btn::before {
+                width: 52px;
+                height: 52px
+            }
+
+            .top-stats {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-content">
+                <span class="iconify" data-icon="mdi:watering-can" data-width="30"></span>
+                <h1>AGRICULTURE IoT · IRRIGATION</h1>
+                <span class="iconify" data-icon="mdi:leaf" data-width="30"></span>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Top Stats -->
+            <div class="top-stats">
+                <div class="stat-card" id="soilMoistureCard">
+                    <span class="iconify stat-icon" data-icon="mdi:water-percent"></span>
+                    <div class="stat-value" id="soilMoistureValue">--%</div>
+                    <div class="stat-label">Soil Moisture <span style="font-size:0.7em;">(REAL)</span></div>
+                </div>
+                <div class="stat-card" id="waterLevelCard">
+                    <span class="iconify stat-icon" data-icon="mdi:water-well"></span>
+                    <div class="stat-value" id="waterLevelValue">85%</div>
+                    <div class="stat-label">Water Level <span style="font-size:0.7em;">(sim)</span></div>
+                </div>
+                <div class="stat-card" id="temperatureCard">
+                    <span class="iconify stat-icon" data-icon="mdi:thermometer"></span>
+                    <div class="stat-value" id="temperatureValue">28°C</div>
+                    <div class="stat-label">Temperature <span style="font-size:0.7em;">(sim)</span></div>
+                </div>
+                <div class="stat-card" id="pumpStatusCard">
+                    <span class="iconify stat-icon" data-icon="mdi:water-pump"></span>
+                    <div class="stat-value" id="pumpStatusValue">OFF</div>
+                    <div class="stat-label">Pump Status</div>
+                </div>
+            </div>
+
+            <!-- Dashboard Grid -->
+            <div class="dashboard-grid">
+                <div class="left-column">
+                    <div class="card weather-card">
+                        <h2><span class="iconify" data-icon="mdi:weather-sunny"></span> Weather (simulated)</h2>
+                        <div class="weather-info-grid">
+                            <div class="weather-item">
+                                <span>Temperature</span>
+                                <span id="weatherTemp">28°C</span>
+                            </div>
+                            <div class="weather-item">
+                                <span>Humidity</span>
+                                <span id="weatherHumidity">65%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card control-card">
+                        <h2><span class="iconify" data-icon="mdi:cog"></span> Irrigation Controls</h2>
+
+                        <!-- Mode buttons -->
+                        <div class="control-section">
+                            <div class="section-label">
+                                <span class="iconify" data-icon="mdi:tune"></span> Operation Mode
+                            </div>
+                            <div class="mode-buttons">
+                                <button class="mode-btn" id="autoModeBtn" onclick="setMode('auto')">
+                                    <span class="iconify" data-icon="mdi:robot"></span> Auto
+                                </button>
+                                <button class="mode-btn" id="manualModeBtn" onclick="setMode('manual')">
+                                    <span class="iconify" data-icon="mdi:hand-back-right"></span> Manual
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Pump toggle -->
+                        <div class="control-section">
+                            <div class="toggle-row">
+                                <span class="toggle-label">
+                                    <span class="iconify" data-icon="mdi:sprinkler"></span> Irrigation Pump
+                                </span>
+                                <div class="switch off" id="pumpSwitch" onclick="togglePump()">
+                                    <div class="switch-slider">
+                                        <span class="iconify" data-icon="mdi:power-off" data-width="12"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top:8px;font-size:0.9em;text-align:center;" id="pumpModeHint">
+                                Loading…
+                            </div>
+                        </div>
+
+                        <!-- Drip toggle -->
+                        <div class="control-section">
+                            <div class="toggle-row">
+                                <span class="toggle-label">
+                                    <span class="iconify" data-icon="mdi:water-opacity"></span> Drip System
+                                </span>
+                                <div class="switch off" id="dripSwitch" onclick="toggleDrip(this)">
+                                    <div class="switch-slider">
+                                        <span class="iconify" data-icon="mdi:power-off" data-width="12"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Threshold (only visible in auto mode) -->
+                        <div class="control-section" id="autoThresholdSection" style="display:none;">
+                            <div class="section-label">
+                                <span class="iconify" data-icon="mdi:water-percent"></span> Auto Threshold
+                            </div>
+                            <div style="display:flex;gap:10px;align-items:center;">
+                                <input type="range" id="moistureThreshold" min="10" max="90" value="30"
+                                    style="flex:1;height:8px;border-radius:4px;background:rgba(255,255,255,0.2);"
+                                    onchange="updateThreshold(this.value)">
+                                <span id="thresholdValue" style="color:white;font-weight:600;min-width:40px;">30%</span>
+                            </div>
+                            <div style="margin-top:8px;font-size:0.9em;color:#aaa;text-align:center;">
+                                Pump ON when moisture below <span id="thresholdDisplay">30%</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="center-column">
+                    <div class="card camera-card">
+                        <h2><span class="iconify" data-icon="mdi:cctv"></span> Live Field View</h2>
+                        <div class="camera-container" onclick="openFullscreen()">
+                            <video id="webcam" autoplay playsinline style="display:none;"></video>
+                            <div id="cameraPlaceholder" class="camera-placeholder">
+                                <span class="iconify" data-icon="mdi:camera-off" style="font-size:2.5em;"></span>
+                                <div>Start Camera to view live feed</div>
+                            </div>
+                        </div>
+                        <div class="camera-controls">
+                            <button class="camera-btn start-btn" onclick="event.stopPropagation();startCamera()">
+                                <span class="iconify" data-icon="mdi:play"></span> Start
+                            </button>
+                            <button class="camera-btn stop-btn" onclick="event.stopPropagation();stopCamera()">
+                                <span class="iconify" data-icon="mdi:stop"></span> Stop
+                            </button>
+                            <button class="camera-btn fullscreen-btn"
+                                onclick="event.stopPropagation();openFullscreen()">
+                                <span class="iconify" data-icon="mdi:fullscreen"></span> Fullscreen
+                            </button>
+                        </div>
+                        <div class="field-gauges">
+                            <div class="gauge-circle">
+                                <span class="iconify gauge-icon" data-icon="mdi:water"></span>
+                                <div class="gauge-value" id="gaugeWaterLevel">85%</div>
+                            </div>
+                            <div class="gauge-circle">
+                                <span class="iconify gauge-icon" data-icon="mdi:water-percent"></span>
+                                <div class="gauge-value" id="gaugeSoilMoisture">--%</div>
+                            </div>
+                            <div class="gauge-circle">
+                                <span class="iconify gauge-icon" data-icon="mdi:thermometer"></span>
+                                <div class="gauge-value" id="gaugeTemperature">28°C</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="right-column">
+                    <div class="card sensor-card">
+                        <h2><span class="iconify" data-icon="mdi:chip"></span> Sensor Data</h2>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <span class="iconify sensor-icon" data-icon="mdi:water-percent"></span>
+                                <div class="sensor-value" id="sensorSoilMoisture">--%</div>
+                                <div class="sensor-label">Soil Moisture <span style="color:#10b981;">● REAL</span></div>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="iconify sensor-icon" data-icon="mdi:water"></span>
+                                <div class="sensor-value" id="sensorWaterLevel">85%</div>
+                                <div class="sensor-label">Water Level</div>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="iconify sensor-icon" data-icon="mdi:thermometer"></span>
+                                <div class="sensor-value" id="sensorTemp">28°C</div>
+                                <div class="sensor-label">Temperature</div>
+                            </div>
+                            <div class="sensor-item">
+                                <span class="iconify sensor-icon" data-icon="mdi:clock-outline"></span>
+                                <div class="sensor-value" id="sensorLastUpdate">--</div>
+                                <div class="sensor-label">Last Update</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card schedule-card">
+                        <h2><span class="iconify" data-icon="mdi:clock-outline"></span> Schedule</h2>
+                        <div class="schedule-grid">
+                            <div class="schedule-item">
+                                <span class="iconify" data-icon="mdi:play" style="font-size:1.5em;"></span>
+                                <div>
+                                    <div style="color:#aaa;font-size:0.85em;">Auto Start</div>
+                                    <div style="color:white;font-weight:600;">06:00</div>
+                                </div>
+                            </div>
+                            <div class="schedule-item">
+                                <span class="iconify" data-icon="mdi:stop" style="font-size:1.5em;"></span>
+                                <div>
+                                    <div style="color:#aaa;font-size:0.85em;">Auto Stop</div>
+                                    <div style="color:white;font-weight:600;">10:00</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2><span class="iconify" data-icon="mdi:history"></span> Recent Events</h2>
+                        <div style="max-height:150px;overflow-y:auto;" id="eventsList">
+                            <div style="color:#aaa;text-align:center;padding:20px;">Loading events...</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Water Usage -->
+            <div class="full-width-section">
+                <div class="water-usage-container">
+                    <div class="water-usage-header">
+                        <h2 style="color:white;display:flex;align-items:center;gap:10px;">
+                            <span class="iconify" data-icon="mdi:water-chart"></span> Water Usage (simulated)
+                        </h2>
+                        <div class="usage-stats">
+                            <div class="usage-stat">
+                                <div class="stat-number">
+                                    <span class="iconify" data-icon="mdi:water"></span>
+                                    <span id="todayUsage">1,200 L</span>
+                                </div>
+                                <div style="color:#aaa;">Today</div>
+                            </div>
+                            <div class="usage-stat">
+                                <div class="stat-number">
+                                    <span class="iconify" data-icon="mdi:water-outline"></span>
+                                    <span id="weekUsage">6,800 L</span>
+                                </div>
+                                <div style="color:#aaa;">This Week</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <div class="water-chart" id="waterChart"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Camera Modal -->
+        <div id="cameraModal" class="camera-modal">
+            <div class="modal-video-container">
+                <video id="fullscreenVideo" autoplay playsinline></video>
+                <button class="modal-close-btn" onclick="closeFullscreen()">✕</button>
+            </div>
+        </div>
+
+        <!-- Toast -->
+        <div id="toast" class="toast">
+            <span class="iconify" data-icon="mdi:check-circle" style="color:#10b981;"></span>
+            <span id="toastMessage">Notification</span>
+        </div>
+
+        <!-- Bottom Buttons -->
+        <div class="bottom-actions">
+            <button class="action-btn" onclick="window.location.href='irrigation_dashboard.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:watering-can"></span>
+                </div>
+                <span class="action-label">Irrigation</span>
+            </button>
+            <button class="action-btn" onclick="window.location.href='animals.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:cow"></span></div>
+                <span class="action-label">Livestock</span>
+            </button>
+            <button class="action-btn" onclick="window.location.href='green_house.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:greenhouse"></span>
+                </div>
+                <span class="action-label">Greenhouse</span>
+            </button>
+            <button class="action-btn" onclick="openFullscreen()">
+                <div class="action-icon-wrapper"><span class="iconify action-icon"
+                        data-icon="mdi:video-wireless"></span></div>
+                <span class="action-label">Camera</span>
+            </button>
+            <button class="action-btn" onclick="dataAnalytics()">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:chart-line"></span>
+                </div>
+                <span class="action-label">Analytics</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIG ====================
+        const API_BASE = 'http://localhost:8001/api';
+        const DEVICE_IDS = { IRRIGATION_PUMP: 1, LIVESTOCK_PUMP: 2, SOIL_MOISTURE: 3 };
+
+        // Simulated values
+        let waterLevel = 85, temperature = 28, humidity = 65;
+        let soilMoisture = '50%', soilMoistureNumeric = 50;
+
+        // ── Mode & threshold — these are the source of truth ──────────────────────
+        let currentMode = 'auto';      // 'auto' | 'manual'
+        let moistureThreshold = 30;
+        let pumpState = false;
+        let dripState = false;
+
+        let pollInterval, simInterval, stream = null;
+        let isToggling = false;
+
+        // ==================== INIT ====================
+        document.addEventListener('DOMContentLoaded', function () {
+            // Highlight irrigation button
+            const btns = document.querySelectorAll('.action-btn');
+            if (btns.length > 0) {
+                btns[0].style.transform = 'scale(1.05)';
+                btns[0].style.borderColor = 'rgba(255,255,255,0.9)';
+                btns[0].style.boxShadow = '0 15px 40px rgba(0,0,0,0.6)';
+            }
+
+            updateWaterChart();
+            loadSettingsAndStart();
+            setTimeout(startCamera, 1000);
+        });
+
+        // ==================== STEP 1: LOAD SETTINGS FROM BACKEND ====================
+        // GET /api/settings  →  { "auto_mode": "manual", "moisture_threshold": "30" }
+        async function loadSettingsAndStart() {
+            try {
+                const res = await fetch(`${API_BASE}/settings`, { signal: AbortSignal.timeout(4000) });
+                if (res.ok) {
+                    const s = await res.json();
+                    // s is a plain flat object — no nested .value property
+                    if (s.auto_mode) currentMode = s.auto_mode;            // "auto" | "manual"
+                    if (s.moisture_threshold) moistureThreshold = parseInt(s.moisture_threshold) || 30;
+                } else {
+                    showToast('Could not load settings — using defaults', 'warning');
+                }
+            } catch (e) {
+                showToast('Backend offline — using defaults', 'warning');
+            }
+
+            // Apply whatever we got (defaults or from server)
+            applyThresholdUI(moistureThreshold);
+            applyModeUI(currentMode);
+
+            // Start polling
+            fetchDashboard();
+            if (pollInterval) clearInterval(pollInterval);
+            if (simInterval) clearInterval(simInterval);
+            pollInterval = setInterval(fetchDashboard, 3000);
+            simInterval = setInterval(simulateOthers, 5000);
+        }
+
+        // ==================== STEP 2: POLL DASHBOARD ====================
+        // GET /api/dashboard  →  { devices:{...}, settings:{...}, recent_events:[...] }
+        async function fetchDashboard() {
+            try {
+                const res = await fetch(`${API_BASE}/dashboard`, { signal: AbortSignal.timeout(4000) });
+                if (!res.ok) return;
+                const data = await res.json();
+
+                // ── Soil moisture ──────────────────────────────────────────────
+                const sm = data.devices?.soil_moisture_sensor;
+                if (sm?.sensor_value) {
+                    soilMoisture = sm.sensor_value;
+                    const m = soilMoisture.match(/\d+/);
+                    soilMoistureNumeric = m ? parseInt(m[0]) : 50;
+                    updateSoilDisplay();
+                }
+                if (sm?.last_seen) {
+                    document.getElementById('sensorLastUpdate').textContent =
+                        new Date(sm.last_seen).toLocaleTimeString();
+                }
+
+                // ── Pump state ────────────────────────────────────────────────
+                const pump = data.devices?.irrigation_pump;
+                if (pump) {
+                    pumpState = pump.current_state === 'ON';
+                    applyPumpUI();
+                    document.getElementById('pumpStatusValue').textContent = pumpState ? 'ON' : 'OFF';
+                }
+
+                // ── Settings (sync if backend changed them from another client) ─
+                if (data.settings?.auto_mode && data.settings.auto_mode !== currentMode) {
+                    currentMode = data.settings.auto_mode;
+                    applyModeUI(currentMode);
+                }
+                if (data.settings?.moisture_threshold) {
+                    const t = parseInt(data.settings.moisture_threshold);
+                    if (!isNaN(t) && t !== moistureThreshold) {
+                        moistureThreshold = t;
+                        applyThresholdUI(moistureThreshold);
+                    }
+                }
+
+                // ── Events ───────────────────────────────────────────────────
+                if (data.recent_events?.length) {
+                    const el = document.getElementById('eventsList');
+                    el.innerHTML = data.recent_events.map(e =>
+                        `<div style="padding:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.9em;">
+                    <span style="color:#aaa;margin-right:10px;">${new Date(e.created_at).toLocaleTimeString()}</span>
+                    <span style="color:white;">${e.event_message}</span>
+                </div>`
+                    ).join('');
+                }
+
+                // ── Auto logic ────────────────────────────────────────────────
+                if (currentMode === 'auto' && !isToggling) {
+                    const shouldBeOn = soilMoistureNumeric < moistureThreshold;
+                    if (shouldBeOn !== pumpState) {
+                        await controlPump(shouldBeOn);
+                    }
+                }
+            } catch (e) {
+                // Network errors are silent — don't spam the user
+            }
+        }
+
+        // ==================== UI HELPERS ====================
+        function applyModeUI(mode) {
+            const autoBtn = document.getElementById('autoModeBtn');
+            const manualBtn = document.getElementById('manualModeBtn');
+            const threshold = document.getElementById('autoThresholdSection');
+            const hint = document.getElementById('pumpModeHint');
+            const pumpSwitch = document.getElementById('pumpSwitch');
+
+            if (mode === 'auto') {
+                autoBtn.classList.add('active');
+                manualBtn.classList.remove('active');
+                threshold.style.display = 'block';
+                hint.textContent = `Auto mode — pump triggers below ${moistureThreshold}% moisture`;
+                hint.style.color = '#10b981';
+                // Disable manual pump toggle in auto mode
+                pumpSwitch.classList.add('disabled');
+                pumpSwitch.style.pointerEvents = 'none';
+            } else {
+                autoBtn.classList.remove('active');
+                manualBtn.classList.add('active');
+                threshold.style.display = 'none';
+                hint.textContent = 'Manual mode — click pump switch to control';
+                hint.style.color = '#ffd700';
+                // Enable manual pump toggle
+                pumpSwitch.classList.remove('disabled');
+                pumpSwitch.style.pointerEvents = 'auto';
+            }
+        }
+
+        function applyThresholdUI(val) {
+            document.getElementById('moistureThreshold').value = val;
+            document.getElementById('thresholdValue').textContent = val + '%';
+            document.getElementById('thresholdDisplay').textContent = val + '%';
+        }
+
+        function applyPumpUI() {
+            const sw = document.getElementById('pumpSwitch');
+            const slider = sw.querySelector('.switch-slider');
+            if (pumpState) {
+                sw.classList.replace('off', 'on');
+                slider.innerHTML = '<span class="iconify" data-icon="mdi:power" data-width="12"></span>';
+            } else {
+                sw.classList.replace('on', 'off');
+                slider.innerHTML = '<span class="iconify" data-icon="mdi:power-off" data-width="12"></span>';
+            }
+        }
+
+        function updateSoilDisplay() {
+            document.getElementById('soilMoistureValue').textContent = soilMoisture;
+            document.getElementById('gaugeSoilMoisture').textContent = soilMoisture;
+            document.getElementById('sensorSoilMoisture').textContent = soilMoisture;
+        }
+
+        // ==================== MODE SWITCHING ====================
+        // PUT /api/settings/mode  →  { "mode": "manual" }
+        async function setMode(mode) {
+            if (mode === currentMode) return;
+
+            // Disable buttons while request is in flight
+            document.getElementById('autoModeBtn').disabled = true;
+            document.getElementById('manualModeBtn').disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/settings/mode`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ mode }),
+                    signal: AbortSignal.timeout(4000)
+                });
+
+                if (res.ok) {
+                    currentMode = mode;
+                    applyModeUI(mode);
+                    showToast(`Switched to ${mode} mode`);
+                    addEvent(`Mode changed to ${mode}`);
+
+                    // In auto mode re-evaluate immediately
+                    if (mode === 'auto') {
+                        const shouldBeOn = soilMoistureNumeric < moistureThreshold;
+                        if (shouldBeOn !== pumpState) await controlPump(shouldBeOn);
+                    }
+                } else {
+                    showToast('Failed to change mode', 'error');
+                }
+            } catch (e) {
+                showToast('Connection error', 'error');
+            } finally {
+                document.getElementById('autoModeBtn').disabled = false;
+                document.getElementById('manualModeBtn').disabled = false;
+            }
+        }
+
+        // ==================== THRESHOLD ====================
+        // PUT /api/settings/threshold  →  { "threshold": 40 }
+        async function updateThreshold(val) {
+            moistureThreshold = parseInt(val);
+            applyThresholdUI(moistureThreshold);
+
+            try {
+                const res = await fetch(`${API_BASE}/settings/threshold`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ threshold: moistureThreshold }),
+                    signal: AbortSignal.timeout(4000)
+                });
+                if (res.ok) {
+                    addEvent(`Threshold changed to ${moistureThreshold}%`);
+                    // Update auto mode hint text
+                    if (currentMode === 'auto') {
+                        document.getElementById('pumpModeHint').textContent =
+                            `Auto mode — pump triggers below ${moistureThreshold}% moisture`;
+                    }
+                } else {
+                    showToast('Failed to save threshold', 'error');
+                }
+            } catch (e) {
+                showToast('Connection error', 'error');
+            }
+        }
+
+        // ==================== PUMP CONTROL ====================
+        // PUT /api/pump/1/control  →  { "state": "ON" }
+        async function togglePump() {
+            if (isToggling) return;
+
+            if (currentMode === 'auto') {
+                showToast('Switch to Manual mode first', 'warning');
+                return;
+            }
+            await controlPump(!pumpState);
+        }
+
+        async function controlPump(targetState) {
+            if (isToggling) return;
+            isToggling = true;
+
+            document.getElementById('pumpStatusValue').innerHTML = '<span class="loading-spinner"></span>';
+
+            try {
+                const res = await fetch(`${API_BASE}/pump/${DEVICE_IDS.IRRIGATION_PUMP}/control`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ state: targetState ? 'ON' : 'OFF' }),
+                    signal: AbortSignal.timeout(4000)
+                });
+
+                if (res.ok) {
+                    pumpState = targetState;
+                    applyPumpUI();
+                    showToast(`Pump turned ${pumpState ? 'ON' : 'OFF'}`);
+                    addEvent(`Pump turned ${pumpState ? 'ON' : 'OFF'} (${currentMode})`);
+                } else {
+                    showToast('Failed to control pump', 'error');
+                }
+            } catch (e) {
+                showToast('Connection error', 'error');
+            } finally {
+                document.getElementById('pumpStatusValue').textContent = pumpState ? 'ON' : 'OFF';
+                isToggling = false;
+            }
+        }
+
+        // ==================== DRIP SYSTEM (local only) ====================
+        function toggleDrip(el) {
+            dripState = !dripState;
+            const slider = el.querySelector('.switch-slider');
+            if (dripState) {
+                el.classList.replace('off', 'on');
+                slider.innerHTML = '<span class="iconify" data-icon="mdi:power" data-width="12"></span>';
+                showToast('Drip system ON');
+            } else {
+                el.classList.replace('on', 'off');
+                slider.innerHTML = '<span class="iconify" data-icon="mdi:power-off" data-width="12"></span>';
+                showToast('Drip system OFF');
+            }
+            addEvent(`Drip system turned ${dripState ? 'ON' : 'OFF'}`);
+        }
+
+        // ==================== SIMULATION ====================
+        function simulateOthers() {
+            waterLevel = Math.max(20, Math.min(100, waterLevel + (Math.random() - 0.5) * 3));
+            temperature = Math.max(15, Math.min(40, temperature + (Math.random() - 0.5) * 2));
+            humidity = Math.max(30, Math.min(90, humidity + (Math.random() - 0.5) * 5));
+
+            const wStr = Math.round(waterLevel) + '%';
+            const tStr = Math.round(temperature) + '°C';
+            const hStr = Math.round(humidity) + '%';
+
+            document.getElementById('waterLevelValue').textContent = wStr;
+            document.getElementById('gaugeWaterLevel').textContent = wStr;
+            document.getElementById('sensorWaterLevel').textContent = wStr;
+
+            document.getElementById('temperatureValue').textContent = tStr;
+            document.getElementById('gaugeTemperature').textContent = tStr;
+            document.getElementById('sensorTemp').textContent = tStr;
+            document.getElementById('weatherTemp').textContent = tStr;
+            document.getElementById('weatherHumidity').textContent = hStr;
+        }
+
+        // ==================== EVENTS LOG ====================
+        function addEvent(message) {
+            const el = document.getElementById('eventsList');
+            if (el.children.length === 1 && el.children[0].textContent.includes('Loading')) {
+                el.innerHTML = '';
+            }
+            const div = document.createElement('div');
+            div.style.cssText = 'padding:8px;border-bottom:1px solid rgba(255,255,255,0.1);font-size:0.9em;';
+            div.innerHTML = `<span style="color:#aaa;margin-right:10px;">${new Date().toLocaleTimeString()}</span>
+                     <span style="color:white;">${message}</span>`;
+            el.insertBefore(div, el.firstChild);
+            while (el.children.length > 10) el.removeChild(el.lastChild);
+        }
+
+        // ==================== WATER CHART ====================
+        function updateWaterChart() {
+            const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+            const values = [1200, 1450, 980, 1250, 1550, 820, 1100];
+            const today = new Date().getDay() - 1;
+            document.getElementById('waterChart').innerHTML = values.map((v, i) =>
+                `<div class="chart-bar" style="height:${Math.floor(v / 20)}%;background:${i === today
+                    ? 'linear-gradient(to top,#f59e0b,#fbbf24)'
+                    : 'linear-gradient(to top,#1e40af,#3b82f6)'};">
+            <div class="bar-value">${v}L</div>
+            <div class="bar-label">${days[i]}</div>
+        </div>`
+            ).join('');
+        }
+
+        // ==================== CAMERA ====================
+        async function startCamera() {
+            try {
+                if (stream) stopCamera();
+                stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } } });
+                const v = document.getElementById('webcam');
+                v.srcObject = stream;
+                v.style.display = 'block';
+                document.getElementById('cameraPlaceholder').style.display = 'none';
+                document.getElementById('fullscreenVideo').srcObject = stream;
+                showToast('Camera started');
+            } catch (e) {
+                showToast('Camera access denied', 'error');
+            }
+        }
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(t => t.stop()); stream = null;
+                document.getElementById('webcam').style.display = 'none';
+                document.getElementById('cameraPlaceholder').style.display = 'flex';
+                document.getElementById('fullscreenVideo').srcObject = null;
+            }
+        }
+        function openFullscreen() {
+            if (stream) document.getElementById('fullscreenVideo').srcObject = stream;
+            document.getElementById('cameraModal').classList.add('active');
+        }
+        function closeFullscreen() { document.getElementById('cameraModal').classList.remove('active'); }
+
+        // ==================== TOAST ====================
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const icon = toast.querySelector('.iconify');
+            const icons = { success: 'mdi:check-circle', error: 'mdi:alert-circle', warning: 'mdi:alert', info: 'mdi:information' };
+            const colors = { success: '#10b981', error: '#ef4444', warning: '#f59e0b', info: '#3b82f6' };
+            icon.setAttribute('data-icon', icons[type] || icons.info);
+            icon.style.color = colors[type] || colors.info;
+            document.getElementById('toastMessage').textContent = message;
+            toast.style.display = 'flex';
+            setTimeout(() => { toast.style.display = 'none'; }, 3000);
+        }
+
+        function dataAnalytics() { showToast('Analytics dashboard coming soon', 'info'); }
+
+        // ==================== CLEANUP ====================
+        window.addEventListener('beforeunload', () => {
+            if (pollInterval) clearInterval(pollInterval);
+            if (simInterval) clearInterval(simInterval);
+            if (stream) stopCamera();
+        });
+    </script>
+
+    <!-- Hub Navigation Button -->
+    <div style="position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+        <a href="all_in_one.html"
+            style="display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; text-decoration: none; padding: 12px 24px; border-radius: 50px; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4); border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(10px); transition: all 0.3s ease;"
+            onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 8px 25px rgba(102, 126, 234, 0.6)';"
+            onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 4px 15px rgba(102, 126, 234, 0.4)';">
+            <span style="font-size: 20px;">🏠</span>
+            <span>HUB</span>
+        </a>
+    </div>
+</body>
+
+</html>
