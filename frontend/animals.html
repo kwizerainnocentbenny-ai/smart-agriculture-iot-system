@@ -1,0 +1,1573 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IoT Animal Monitoring · Livestock Hub</title>
+    <script src="https://cdn.jsdelivr.net/npm/@iconify/iconify@3.1.0/dist/iconify.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            height: 100%;
+            overflow-x: hidden;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background:
+                linear-gradient(135deg, rgba(15, 35, 45, 0.92) 0%, rgba(20, 50, 60, 0.88) 50%, rgba(25, 60, 50, 0.90) 100%),
+                url('https://images.unsplash.com/photo-1500595046743-cd271d694d30?w=1920&q=80') center/cover fixed;
+            position: relative;
+            color: white;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 50% 50%, rgba(34, 139, 94, 0.08) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 1;
+            padding-bottom: 180px;
+        }
+
+        /* Header - matching irrigation style but with animal theme */
+        .header {
+            text-align: center;
+            padding: 10px 20px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .header-content {
+            display: inline-flex;
+            align-items: center;
+            gap: 15px;
+            background: linear-gradient(135deg, rgba(21, 87, 76, 0.96) 0%, rgba(16, 65, 57, 0.96) 100%);
+            padding: 10px 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(52, 211, 153, 0.35);
+            backdrop-filter: blur(12px);
+        }
+
+        .header h1 {
+            font-size: 1.4em;
+            color: white;
+            text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.5);
+            font-weight: 700;
+        }
+
+        .subtitle {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 0.6em;
+            font-weight: 400;
+        }
+
+        /* Status Bar - updated to match irrigation style */
+        .status-bar {
+            background: linear-gradient(135deg, rgba(21, 87, 76, 0.7), rgba(16, 65, 57, 0.7));
+            margin: 10px 20px;
+            padding: 12px 30px;
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            align-items: center;
+            border-radius: 15px;
+            border: 2px solid rgba(52, 211, 153, 0.25);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px 20px;
+        }
+
+        .main-content::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .main-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .main-content::-webkit-scrollbar-thumb {
+            background: rgba(52, 211, 153, 0.4);
+            border-radius: 10px;
+        }
+
+        /* Top Stats - matching irrigation card style */
+        .top-stats {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .stat-card {
+            border-radius: 18px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(52, 211, 153, 0.25);
+            backdrop-filter: blur(15px);
+            transition: transform 0.3s ease;
+            background: linear-gradient(135deg, rgba(21, 87, 76, 0.92), rgba(16, 65, 57, 0.92));
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            font-size: 2.8em;
+            margin-bottom: 10px;
+            color: white;
+            filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.3));
+        }
+
+        .stat-value {
+            font-size: 2.2em;
+            font-weight: 800;
+            color: white;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.4);
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: rgba(255, 255, 255, 0.95);
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .alert-badge {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: 700;
+        }
+
+        /* Dashboard Grid */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1.2fr 1fr;
+            gap: 20px;
+        }
+
+        /* Card style matching irrigation */
+        .card {
+            border-radius: 18px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(52, 211, 153, 0.25);
+            backdrop-filter: blur(15px);
+            margin-bottom: 20px;
+            position: relative;
+            background: linear-gradient(135deg, rgba(21, 87, 76, 0.85), rgba(16, 65, 57, 0.85));
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, rgba(52, 211, 153, 0.6), rgba(52, 211, 153, 0.1));
+            border-radius: 18px 18px 0 0;
+        }
+
+        .card h2 {
+            font-size: 1.2em;
+            margin-bottom: 15px;
+            color: white;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.4);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: 600;
+            padding-bottom: 10px;
+            border-bottom: 2px solid rgba(52, 211, 153, 0.3);
+        }
+
+        /* Live Feed - Updated for webcam */
+        .live-feed {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 350px;
+            position: relative;
+            border: 2px solid rgba(52, 211, 153, 0.3);
+        }
+
+        #liveWebcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+
+        .live-feed-placeholder {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            display: none;
+        }
+
+        .live-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background: rgba(239, 68, 68, 0.95);
+            color: white;
+            padding: 8px 15px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        .camera-control-overlay {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            z-index: 10;
+            display: flex;
+            gap: 10px;
+        }
+
+        .camera-control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .camera-control-btn:hover {
+            background: rgba(239, 68, 68, 0.8);
+            transform: scale(1.1);
+        }
+
+        /* Health Alerts */
+        .alert-list {
+            display: grid;
+            gap: 12px;
+        }
+
+        .alert-item {
+            background: rgba(15, 35, 45, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #ef4444;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: all 0.3s;
+        }
+
+        .alert-item:hover {
+            background: rgba(15, 35, 45, 0.8);
+            transform: translateX(5px);
+        }
+
+        .alert-item:nth-child(3) {
+            border-left-color: #f59e0b;
+        }
+
+        .alert-icon {
+            font-size: 1.5em;
+        }
+
+        /* Location Tracking */
+        .location-map {
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+            height: 300px;
+            position: relative;
+            border: 2px solid rgba(52, 211, 153, 0.3);
+        }
+
+        .location-map img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .field-badge {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(21, 128, 61, 0.95);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 700;
+            border: 2px solid white;
+        }
+
+        /* Environmental Stats */
+        .env-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .env-item {
+            background: rgba(15, 35, 45, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .env-icon {
+            font-size: 2.5em;
+        }
+
+        .env-badge {
+            background: #10b981;
+            color: white;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.9em;
+        }
+
+        /* Charts */
+        .chart-container {
+            background: rgba(15, 35, 45, 0.6);
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 15px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+        }
+
+        .chart-value {
+            font-size: 2em;
+            font-weight: 900;
+            color: #34d399;
+        }
+
+        .line-chart {
+            height: 120px;
+            background: linear-gradient(to bottom, rgba(52, 211, 153, 0.1), transparent);
+            border-radius: 8px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .bar-chart {
+            display: flex;
+            align-items: flex-end;
+            height: 150px;
+            gap: 10px;
+            padding: 10px 0;
+        }
+
+        .bar {
+            flex: 1;
+            border-radius: 6px 6px 0 0;
+            transition: all 0.3s;
+            cursor: pointer;
+            position: relative;
+        }
+
+        .bar:hover {
+            transform: scaleY(1.05);
+        }
+
+        .bar-label {
+            position: absolute;
+            bottom: -25px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 0.8em;
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        /* Pump Control Card */
+        .control-card {
+            background: linear-gradient(135deg, rgba(220, 38, 38, 0.93), rgba(239, 68, 68, 0.93));
+            margin-bottom: 20px;
+        }
+
+        .control-section {
+            background: rgba(255, 255, 255, 0.22);
+            padding: 14px;
+            border-radius: 10px;
+            margin-bottom: 12px;
+        }
+
+        .section-label {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .mode-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .mode-btn {
+            padding: 12px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .mode-btn.active {
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+            color: white;
+        }
+
+        .mode-btn:not(.active) {
+            background: white;
+            color: #1e40af;
+        }
+
+        .toggle-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .toggle-label {
+            font-weight: 600;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .switch {
+            width: 70px;
+            height: 36px;
+            background: #475569;
+            border-radius: 20px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .switch.on {
+            background: linear-gradient(135deg, #10b981, #059669);
+        }
+
+        .switch.off {
+            background: linear-gradient(135deg, #64748b, #475569);
+        }
+
+        .switch-slider {
+            position: absolute;
+            top: 3px;
+            width: 30px;
+            height: 30px;
+            background: white;
+            border-radius: 50%;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .switch.on .switch-slider {
+            right: 3px;
+        }
+
+        .switch.off .switch-slider {
+            left: 3px;
+        }
+
+        /* Schedule Display */
+        .schedule-display {
+            background: rgba(15, 35, 45, 0.6);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .schedule-time {
+            font-size: 2em;
+            font-weight: 900;
+            color: #fbbf24;
+        }
+
+        .schedule-label {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .countdown-timer {
+            font-size: 1.2em;
+            color: #34d399;
+            margin-top: 10px;
+        }
+
+        /* Toast Notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: slideInRight 0.3s ease;
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(100%);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, .3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* Tracking Stats */
+        .tracking-stats {
+            display: grid;
+            gap: 12px;
+        }
+
+        .tracking-item {
+            background: rgba(15, 35, 45, 0.6);
+            padding: 15px 20px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .tracking-icon {
+            font-size: 1.8em;
+        }
+
+        .tracking-value {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: white;
+        }
+
+        /* BOTTOM ACTIONS */
+        .bottom-actions {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(to top, rgba(15, 35, 45, 0.98), rgba(15, 35, 45, 0.85));
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 40px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+            border-top: 2px solid rgba(52, 211, 153, 0.3);
+            flex-wrap: wrap;
+        }
+
+        .action-btn {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: 3px solid rgba(52, 211, 153, 0.5);
+            cursor: pointer;
+            transition: all 0.4s ease;
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            background: linear-gradient(135deg, #1e40af, #1e3a8a);
+        }
+
+        .action-btn::before {
+            content: '';
+            position: absolute;
+            width: 75px;
+            height: 75px;
+            background: rgba(52, 211, 153, 0.15);
+            border-radius: 50%;
+            top: 12px;
+            left: 12px;
+            z-index: 0;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-10px) scale(1.1);
+            box-shadow: 0 18px 45px rgba(0, 0, 0, 0.6);
+            border-color: rgba(52, 211, 153, 0.8);
+        }
+
+        .action-btn:nth-child(1) {
+            background: linear-gradient(135deg, #059669, #10b981);
+        }
+
+        .action-btn:nth-child(2) {
+            background: linear-gradient(135deg, #16a34a, #22c55e);
+        }
+
+        .action-btn:nth-child(3) {
+            background: linear-gradient(135deg, #ea580c, #f97316);
+        }
+
+        .action-btn:nth-child(4) {
+            background: linear-gradient(135deg, #b45309, #d97706);
+        }
+
+        .action-btn:nth-child(5) {
+            background: linear-gradient(135deg, #9333ea, #a855f7);
+        }
+
+        .action-icon-wrapper {
+            width: 45px;
+            height: 45px;
+            background: rgba(52, 211, 153, 0.25);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 6px;
+            z-index: 1;
+            box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .action-icon {
+            font-size: 1.6em;
+            color: white;
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
+        }
+
+        .action-label {
+            color: white;
+            font-weight: 700;
+            font-size: 0.75em;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+            z-index: 1;
+            text-align: center;
+        }
+
+        @media (max-width: 1400px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .top-stats {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        @media (max-width: 768px) {
+            .top-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .bottom-actions {
+                gap: 15px;
+                padding: 15px;
+            }
+
+            .action-btn {
+                width: 80px;
+                height: 80px;
+            }
+
+            .action-btn::before {
+                width: 60px;
+                height: 60px;
+                top: 9px;
+                left: 9px;
+            }
+
+            .action-icon-wrapper {
+                width: 35px;
+                height: 35px;
+            }
+
+            .action-icon {
+                font-size: 1.3em;
+            }
+
+            .action-label {
+                font-size: 0.65em;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .bottom-actions {
+                gap: 10px;
+            }
+
+            .action-btn {
+                width: 70px;
+                height: 70px;
+            }
+
+            .action-btn::before {
+                width: 52px;
+                height: 52px;
+                top: 8px;
+                left: 8px;
+            }
+
+            .top-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <!-- Header - matching irrigation style -->
+        <div class="header">
+            <div class="header-content">
+                <span class="iconify" data-icon="mdi:cow" data-width="30"></span>
+                <h1>IoT LIVESTOCK DASHBOARD</h1>
+                <span class="iconify" data-icon="mdi:heart-pulse" data-width="30"></span>
+            </div>
+        </div>
+
+        <!-- Status Bar - updated to match irrigation style -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="iconify" data-icon="mdi:check-circle" data-width="24" style="color: #10b981;"></span>
+                <span>System Online</span>
+            </div>
+            <div class="status-item">
+                <span class="iconify" data-icon="mdi:chart-line" data-width="24" style="color: #10b981;"></span>
+                <span>Real-Time Tracking</span>
+            </div>
+            <div class="status-item">
+                <span class="iconify" data-icon="mdi:clock-outline" data-width="24" style="color: #10b981;"></span>
+                <span>Scheduled: 12:00 PM</span>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Top Stats - with icons like irrigation -->
+            <div class="top-stats">
+                <div class="stat-card">
+                    <span class="iconify stat-icon" data-icon="mdi:thermometer" style="color: #60a5fa;"></span>
+                    <div class="stat-value">25°C</div>
+                    <div class="stat-label">Barn Temperature</div>
+                </div>
+                <div class="stat-card">
+                    <span class="iconify stat-icon" data-icon="mdi:water-percent" style="color: #34d399;"></span>
+                    <div class="stat-value">78%</div>
+                    <div class="stat-label">Humidity Level</div>
+                </div>
+                <div class="stat-card">
+                    <span class="iconify stat-icon" data-icon="mdi:cow" style="color: #fbbf24;"></span>
+                    <div class="stat-value">145</div>
+                    <div class="stat-label">Cattle In Barn</div>
+                </div>
+                <div class="stat-card">
+                    <span class="iconify stat-icon" data-icon="mdi:alert" style="color: #ef4444;"></span>
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">Health Alerts</div>
+                </div>
+                <div class="stat-card">
+                    <span class="iconify stat-icon" data-icon="mdi:clock-outline" style="color: #fbbf24;"></span>
+                    <div class="stat-value" id="currentTimeDisplay">12:00 PM</div>
+                    <div class="stat-label">Current Time</div>
+                </div>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-grid">
+                <!-- Left Column -->
+                <div>
+                    <!-- Live Feed -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:video" data-width="22"></span>
+                            Live Animal Monitoring
+                        </h2>
+                        <div class="live-feed">
+                            <div class="live-badge">
+                                <span class="iconify" data-icon="mdi:record-circle" data-width="16"></span>
+                                LIVE - Camera Active
+                            </div>
+                            <div class="camera-control-overlay">
+                                <button class="camera-control-btn" onclick="toggleCamera()" title="Restart Camera">
+                                    <span class="iconify" data-icon="mdi:camera-retake" data-width="20"></span>
+                                </button>
+                            </div>
+                            <video id="liveWebcam" autoplay playsinline></video>
+                            <div id="cameraPlaceholder" class="live-feed-placeholder">
+                                <span class="iconify" data-icon="mdi:camera-off"
+                                    style="font-size:3em;color:#64748b;margin-bottom:10px;"></span>
+                                <div>Camera unavailable. Click to retry.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Environmental Stats -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:leaf" data-width="22"></span>
+                            Environmental Stats
+                        </h2>
+                        <div class="env-grid">
+                            <div class="env-item">
+                                <span class="iconify env-icon" data-icon="mdi:air-filter"
+                                    style="color: #10b981;"></span>
+                                <div>
+                                    <div style="font-weight: 700; margin-bottom: 5px;">Air Quality</div>
+                                    <span class="env-badge">Good</span>
+                                </div>
+                            </div>
+                            <div class="env-item">
+                                <span class="iconify env-icon" data-icon="mdi:water" style="color: #3b82f6;"></span>
+                                <div>
+                                    <div style="font-weight: 700; margin-bottom: 5px;">Water Level</div>
+                                    <span class="env-badge">Normal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Heart Rate -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:heart-pulse" data-width="22"></span>
+                            Heart Rate
+                        </h2>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <span style="font-weight: 600;">Current:</span>
+                                <span class="chart-value">82 BPM</span>
+                            </div>
+                            <div class="line-chart">
+                                <svg width="100%" height="100%" style="position: absolute;">
+                                    <polyline
+                                        points="0,80 50,60 100,70 150,50 200,65 250,45 300,60 350,50 400,55 450,60 500,50"
+                                        fill="none" stroke="#34d399" stroke-width="3" />
+                                </svg>
+                            </div>
+                            <div
+                                style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 0.85em; color: rgba(255,255,255,0.7);">
+                                <span>Past</span>
+                                <span>Today</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Rumination -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:food-drumstick" data-width="22"></span>
+                            Rumination
+                        </h2>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <span style="font-weight: 600;">Current:</span>
+                                <span class="chart-value">45 min</span>
+                            </div>
+                            <div style="margin-bottom: 10px; font-size: 0.9em; color: rgba(255,255,255,0.8);">Daily
+                                Chewing Activity</div>
+                            <div class="bar-chart">
+                                <div class="bar"
+                                    style="height: 60%; background: linear-gradient(to top, #2563eb, #60a5fa);">
+                                    <div class="bar-label">6 AM</div>
+                                </div>
+                                <div class="bar"
+                                    style="height: 40%; background: linear-gradient(to top, #2563eb, #60a5fa);">
+                                    <div class="bar-label">12 PM</div>
+                                </div>
+                                <div class="bar"
+                                    style="height: 70%; background: linear-gradient(to top, #10b981, #34d399);">
+                                    <div class="bar-label">6 PM</div>
+                                </div>
+                                <div class="bar"
+                                    style="height: 85%; background: linear-gradient(to top, #10b981, #34d399);">
+                                    <div class="bar-label">10 PM</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column -->
+                <div>
+                    <!-- Health Alerts -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:alert-octagon" data-width="22"></span>
+                            Health & Activity Alerts
+                        </h2>
+                        <div class="alert-list">
+                            <div class="alert-item">
+                                <span class="iconify alert-icon" data-icon="mdi:alert-circle"
+                                    style="color: #ef4444;"></span>
+                                <div>
+                                    <div style="font-weight: 700;">Cow #12</div>
+                                    <div style="font-size: 0.9em; color: rgba(255,255,255,0.8);">High Temperature</div>
+                                </div>
+                            </div>
+                            <div class="alert-item">
+                                <span class="iconify alert-icon" data-icon="mdi:alert-circle"
+                                    style="color: #ef4444;"></span>
+                                <div>
+                                    <div style="font-weight: 700;">Cow #27</div>
+                                    <div style="font-size: 0.9em; color: rgba(255,255,255,0.8);">Low Activity</div>
+                                </div>
+                            </div>
+                            <div class="alert-item">
+                                <span class="iconify alert-icon" data-icon="mdi:alert" style="color: #f59e0b;"></span>
+                                <div>
+                                    <div style="font-weight: 700;">Cow #35</div>
+                                    <div style="font-size: 0.9em; color: rgba(255,255,255,0.8);">Low Rumination</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Location Tracking -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:map-marker" data-width="22"></span>
+                            Location Tracking
+                        </h2>
+                        <div class="location-map">
+                            <img src="https://images.unsplash.com/photo-1500382017468-9049fed747ef?w=800&q=80"
+                                alt="Field">
+                            <div class="field-badge">
+                                North Pasture
+                            </div>
+                            <span class="iconify" data-icon="mdi:cow" data-width="50"
+                                style="position: absolute; bottom: 30%; left: 45%; color: white; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.6));"></span>
+                        </div>
+                    </div>
+
+                    <!-- WATER PUMP CONTROL - Time-based Auto -->
+                    <div class="card control-card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:water-pump" data-width="22"></span>
+                            Water Pump Control
+                        </h2>
+                        <div class="control-section">
+                            <div class="section-label">
+                                <span class="iconify" data-icon="mdi:auto-mode" data-width="18"></span>
+                                Operation Mode
+                            </div>
+                            <div class="mode-buttons">
+                                <button class="mode-btn active" id="autoModeBtn" onclick="setMode('auto')">
+                                    <span class="iconify" data-icon="mdi:clock-outline" data-width="16"></span> Auto (12
+                                    PM)
+                                </button>
+                                <button class="mode-btn" id="manualModeBtn" onclick="setMode('manual')">
+                                    <span class="iconify" data-icon="mdi:hand-back-right" data-width="16"></span> Manual
+                                </button>
+                            </div>
+                        </div>
+                        <div class="control-section">
+                            <div class="toggle-row">
+                                <span class="toggle-label">
+                                    <span class="iconify" data-icon="mdi:water-pump" data-width="18"></span> Water Pump
+                                </span>
+                                <div class="switch off" id="pumpSwitch" onclick="togglePump()">
+                                    <div class="switch-slider">
+                                        <span class="iconify" data-icon="mdi:power-off" data-width="12"></span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 8px; font-size: 0.9em; color: #ffd700; text-align: center;"
+                                id="pumpModeHint">
+                                Manual mode - Click to toggle
+                            </div>
+                        </div>
+
+                        <!-- Schedule Display -->
+                        <div class="schedule-display">
+                            <div class="schedule-time" id="scheduleTime">12:00 PM</div>
+                            <div class="schedule-label">Scheduled Pump Time</div>
+                            <div class="countdown-timer" id="countdownTimer"></div>
+                            <div style="margin-top: 10px; font-size: 0.9em; color: #34d399;" id="lastRunTime">
+                                Last run: --
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tracking Stats (re-added) -->
+                    <div class="card">
+                        <h2>
+                            <span class="iconify" data-icon="mdi:chart-box" data-width="22"></span>
+                            Activity Metrics
+                        </h2>
+                        <div class="tracking-stats">
+                            <div class="tracking-item">
+                                <span class="iconify tracking-icon" data-icon="mdi:clock-outline"
+                                    style="color: #fbbf24;"></span>
+                                <div>
+                                    <div style="font-size: 0.85em; color: rgba(255,255,255,0.8); margin-bottom: 3px;">
+                                        Last Pump Run:</div>
+                                    <div class="tracking-value" id="lastPumpRun">--:--</div>
+                                </div>
+                            </div>
+                            <div class="tracking-item">
+                                <span class="iconify tracking-icon" data-icon="mdi:walk" style="color: #34d399;"></span>
+                                <div>
+                                    <div style="font-size: 0.85em; color: rgba(255,255,255,0.8); margin-bottom: 3px;">
+                                        Today's Waterings:</div>
+                                    <div class="tracking-value" id="todayWaterings">1</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast" class="toast">
+            <span class="iconify" data-icon="mdi:check-circle" style="color: #10b981;"></span>
+            <span id="toastMessage">Notification</span>
+        </div>
+
+        <!-- BOTTOM BUTTONS -->
+        <div class="bottom-actions">
+            <button class="action-btn" onclick="window.location.href='irrigation_dashboard.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:watering-can"></span>
+                </div>
+                <span class="action-label">Irrigation</span>
+            </button>
+            <button class="action-btn" onclick="window.location.href='animals.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:cow"></span></div>
+                <span class="action-label">Livestock</span>
+            </button>
+            <button class="action-btn" onclick="window.location.href='green_house.html'">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:greenhouse"></span>
+                </div>
+                <span class="action-label">Greenhouse</span>
+            </button>
+            <button class="action-btn" onclick="toggleCamera()">
+                <div class="action-icon-wrapper"><span class="iconify action-icon"
+                        data-icon="mdi:video-wireless"></span></div>
+                <span class="action-label">Live Camera</span>
+            </button>
+            <button class="action-btn" onclick="dataAnalytics()">
+                <div class="action-icon-wrapper"><span class="iconify action-icon" data-icon="mdi:chart-line"></span>
+                </div>
+                <span class="action-label">Analytics</span>
+            </button>
+        </div>
+    </div>
+
+<script>
+    // ==================== CONFIG ====================
+    const API_BASE = 'http://localhost:8001/api';
+
+    const DEVICE_IDS = {
+        WATER_PUMP: 1
+    };
+
+    const SCHEDULED_HOUR = 12;
+    const SCHEDULED_MINUTE = 0;
+    const RUN_DURATION = 60;
+
+    let currentMode = 'auto';
+    let pumpState = false;
+    let lastRunTime = null;
+    let todayWaterings = 0;
+    let pumpTimer = null;
+
+    let pollInterval, timeInterval, stream = null;
+    let isToggling = false;
+
+    // ==================== INIT ====================
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Page loaded, initializing...');
+
+        const buttons = document.querySelectorAll('.action-btn');
+        if (buttons.length > 1) {
+            buttons[1].style.transform = 'scale(1.05)';
+            buttons[1].style.borderColor = 'rgba(52, 211, 153, 0.9)';
+            buttons[1].style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.6)';
+        }
+
+        const savedLastRun = localStorage.getItem('lastPumpRun');
+        if (savedLastRun) {
+            lastRunTime = savedLastRun;
+            const lastRunEl = document.getElementById('lastPumpRun');
+            if (lastRunEl) lastRunEl.textContent = lastRunTime;
+        }
+
+        const savedWaterings = localStorage.getItem('todayWaterings');
+        if (savedWaterings) {
+            todayWaterings = parseInt(savedWaterings);
+            const wateringsEl = document.getElementById('todayWaterings');
+            if (wateringsEl) wateringsEl.textContent = todayWaterings;
+        }
+
+        // Test backend connection
+        testBackendConnection();
+
+        startPolling();
+        startTimeChecker();
+        updateCurrentTime();
+        timeInterval = setInterval(updateCurrentTime, 1000);
+
+        setTimeout(startCamera, 500);
+    });
+
+    // ==================== TEST BACKEND CONNECTION ====================
+    async function testBackendConnection() {
+        try {
+            console.log('Testing backend connection...');
+            const response = await fetch(`${API_BASE}/health`);
+            if (response.ok) {
+                const data = await response.json();
+                console.log('✅ Backend connected:', data);
+                showToast('Connected to server', 'success');
+            } else {
+                console.error('❌ Backend returned error:', response.status);
+                showToast('Server error: ' + response.status, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Cannot connect to backend:', error);
+            showToast('Cannot connect to server. Make sure backend is running on port 8001', 'error');
+        }
+    }
+
+    // ==================== TIME FUNCTIONS ====================
+    function updateCurrentTime() {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        const timeEl = document.getElementById('currentTimeDisplay');
+        if (timeEl) timeEl.textContent = timeString;
+
+        if (currentMode === 'auto') {
+            updateCountdown();
+        }
+    }
+
+    function updateCountdown() {
+        const now = new Date();
+        const scheduled = new Date();
+        scheduled.setHours(SCHEDULED_HOUR, SCHEDULED_MINUTE, 0, 0);
+
+        if (now > scheduled) {
+            scheduled.setDate(scheduled.getDate() + 1);
+        }
+
+        const diffMs = scheduled - now;
+        const diffHrs = Math.floor(diffMs / 3600000);
+        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+        const diffSecs = Math.floor((diffMs % 60000) / 1000);
+
+        let countdownText = '';
+        if (diffHrs > 0) {
+            countdownText = `${diffHrs}h ${diffMins}m ${diffSecs}s`;
+        } else if (diffMins > 0) {
+            countdownText = `${diffMins}m ${diffSecs}s`;
+        } else {
+            countdownText = `${diffSecs}s`;
+        }
+
+        const timerEl = document.getElementById('countdownTimer');
+        if (timerEl) timerEl.textContent = `Next run in: ${countdownText}`;
+    }
+
+    function startTimeChecker() {
+        setInterval(() => {
+            if (currentMode !== 'auto') return;
+
+            const now = new Date();
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentSecond = now.getSeconds();
+
+            if (currentHour === SCHEDULED_HOUR &&
+                currentMinute === SCHEDULED_MINUTE &&
+                currentSecond === 0) {
+                runScheduledPump();
+            }
+        }, 1000);
+    }
+
+    async function runScheduledPump() {
+        if (pumpState) return;
+
+        showToast('⏰ Scheduled watering started', 'info');
+        await sendPumpCommand(true);
+
+        if (pumpTimer) clearTimeout(pumpTimer);
+        pumpTimer = setTimeout(async () => {
+            await sendPumpCommand(false);
+            showToast('✅ Scheduled watering completed', 'success');
+
+            const now = new Date();
+            lastRunTime = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+            const lastRunEl = document.getElementById('lastPumpRun');
+            if (lastRunEl) lastRunEl.textContent = lastRunTime;
+
+            const lastRunTimeEl = document.getElementById('lastRunTime');
+            if (lastRunTimeEl) lastRunTimeEl.textContent = `Last run: ${lastRunTime}`;
+
+            localStorage.setItem('lastPumpRun', lastRunTime);
+
+            todayWaterings++;
+            const wateringsEl = document.getElementById('todayWaterings');
+            if (wateringsEl) wateringsEl.textContent = todayWaterings;
+            localStorage.setItem('todayWaterings', todayWaterings);
+
+        }, RUN_DURATION * 1000);
+    }
+
+    // ==================== POLLING ====================
+    function startPolling() {
+        fetchPumpState();
+        pollInterval = setInterval(fetchPumpState, 3000);
+    }
+
+    async function fetchPumpState() {
+        try {
+            const response = await fetch(`${API_BASE}/devices/${DEVICE_IDS.WATER_PUMP}`);
+            if (response.ok) {
+                const data = await response.json();
+                pumpState = data.current_state === 'ON';
+                updatePumpUI();
+
+                // Update any pump status displays
+                const pumpStatusEl = document.getElementById('pumpStatusValue');
+                if (pumpStatusEl) pumpStatusEl.textContent = pumpState ? 'ON' : 'OFF';
+            }
+        } catch (error) {
+            console.error('Error fetching pump state:', error);
+        }
+    }
+
+    // ==================== FIXED PUMP CONTROL ====================
+    async function togglePump() {
+        if (isToggling) return;
+
+        if (currentMode === 'auto') {
+            showToast('Switch to manual mode first', 'warning');
+            return;
+        }
+
+        await sendPumpCommand(!pumpState);
+    }
+
+    async function sendPumpCommand(state) {
+        if (isToggling) return;
+        isToggling = true;
+
+        try {
+            // Show loading
+            const pumpStatusEl = document.getElementById('pumpStatusValue');
+            if (pumpStatusEl) pumpStatusEl.innerHTML = '<span class="loading-spinner"></span>';
+
+            console.log('Sending pump command:', { state: state ? 'ON' : 'OFF' });
+
+            const response = await fetch(`${API_BASE}/pump/${DEVICE_IDS.WATER_PUMP}/control`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ state: state ? 'ON' : 'OFF' })
+            });
+
+            const data = await response.json();
+            console.log('Response:', data);
+
+            if (response.ok) {
+                pumpState = state;
+                updatePumpUI();
+                if (pumpStatusEl) pumpStatusEl.textContent = pumpState ? 'ON' : 'OFF';
+                showToast(`Water pump turned ${pumpState ? 'ON' : 'OFF'}`);
+            } else {
+                // Server returned an error
+                showToast(`Error: ${data.detail || 'Failed to control pump'}`, 'error');
+                if (pumpStatusEl) pumpStatusEl.textContent = pumpState ? 'ON' : 'OFF';
+            }
+        } catch (error) {
+            console.error('Fetch error:', error);
+
+            // More specific error messages
+            if (error.message.includes('Failed to fetch')) {
+                showToast('❌ Cannot connect to server. Make sure backend is running on port 8001', 'error');
+            } else if (error.message.includes('NetworkError')) {
+                showToast('❌ Network error - check your connection', 'error');
+            } else {
+                showToast('❌ Connection error: ' + error.message, 'error');
+            }
+
+            const pumpStatusEl = document.getElementById('pumpStatusValue');
+            if (pumpStatusEl) pumpStatusEl.textContent = pumpState ? 'ON' : 'OFF';
+        } finally {
+            isToggling = false;
+        }
+    }
+
+    function setMode(mode) {
+        currentMode = mode;
+
+        const autoBtn = document.getElementById('autoModeBtn');
+        const manualBtn = document.getElementById('manualModeBtn');
+        const hint = document.getElementById('pumpModeHint');
+
+        if (autoBtn) autoBtn.classList.toggle('active', mode === 'auto');
+        if (manualBtn) manualBtn.classList.toggle('active', mode === 'manual');
+
+        if (hint) {
+            if (mode === 'auto') {
+                hint.textContent = 'Auto mode - Pump runs daily at 12:00 PM for 1 minute';
+                hint.style.color = '#10b981';
+            } else {
+                hint.textContent = 'Manual mode - Click to toggle pump';
+                hint.style.color = '#ffd700';
+            }
+        }
+
+        showToast(`Switched to ${mode} mode`);
+    }
+
+    function updatePumpUI() {
+        const pumpSwitch = document.getElementById('pumpSwitch');
+        if (!pumpSwitch) return;
+
+        const slider = pumpSwitch.querySelector('.switch-slider');
+
+        if (pumpState) {
+            pumpSwitch.classList.remove('off');
+            pumpSwitch.classList.add('on');
+            if (slider) slider.innerHTML = '<span class="iconify" data-icon="mdi:power" data-width="12"></span>';
+        } else {
+            pumpSwitch.classList.remove('on');
+            pumpSwitch.classList.add('off');
+            if (slider) slider.innerHTML = '<span class="iconify" data-icon="mdi:power-off" data-width="12"></span>';
+        }
+    }
+
+    // ==================== CAMERA ====================
+    async function startCamera() {
+        try {
+            if (stream) stopCamera();
+
+            stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                    width: { ideal: 1280 },
+                    height: { ideal: 720 },
+                    facingMode: 'environment'
+                }
+            });
+
+            const video = document.getElementById('liveWebcam');
+            const placeholder = document.getElementById('cameraPlaceholder');
+
+            if (video) video.srcObject = stream;
+            if (video) video.style.display = 'block';
+            if (placeholder) placeholder.style.display = 'none';
+
+            showToast('Camera started');
+        } catch (error) {
+            console.error('Error accessing camera:', error);
+            const placeholder = document.getElementById('cameraPlaceholder');
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+                placeholder.innerHTML = `
+                    <span class="iconify" data-icon="mdi:camera-off" style="font-size:3em;color:#ef4444;"></span>
+                    <div>Camera access denied</div>
+                `;
+            }
+        }
+    }
+
+    function stopCamera() {
+        if (stream) {
+            stream.getTracks().forEach(track => track.stop());
+            stream = null;
+
+            const video = document.getElementById('liveWebcam');
+            const placeholder = document.getElementById('cameraPlaceholder');
+
+            if (video) video.style.display = 'none';
+            if (placeholder) {
+                placeholder.style.display = 'flex';
+                placeholder.innerHTML = `
+                    <span class="iconify" data-icon="mdi:camera-off" style="font-size:3em;color:#64748b;"></span>
+                    <div>Camera stopped</div>
+                    <button onclick="startCamera()" style="margin-top:15px; padding:8px 20px; background:#10b981; border:none; border-radius:8px; color:white; cursor:pointer;">Restart Camera</button>
+                `;
+            }
+        }
+    }
+
+    function toggleCamera() {
+        if (stream) {
+            stopCamera();
+        } else {
+            startCamera();
+        }
+    }
+
+    // ==================== TOAST ====================
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        const icon = toast?.querySelector('.iconify');
+        const msgSpan = document.getElementById('toastMessage');
+
+        if (!toast || !icon || !msgSpan) return;
+
+        const colors = {
+            success: '#10b981',
+            error: '#ef4444',
+            warning: '#f59e0b',
+            info: '#3b82f6'
+        };
+
+        const icons = {
+            success: 'mdi:check-circle',
+            error: 'mdi:alert-circle',
+            warning: 'mdi:alert',
+            info: 'mdi:information'
+        };
+
+        icon.style.color = colors[type] || colors.info;
+        icon.setAttribute('data-icon', icons[type] || icons.info);
+
+        msgSpan.textContent = message;
+        toast.style.display = 'flex';
+
+        setTimeout(() => {
+            toast.style.display = 'none';
+        }, 3000);
+    }
+
+    function dataAnalytics() {
+        showToast('Analytics dashboard coming soon', 'info');
+    }
+
+    // Clean up
+    window.addEventListener('beforeunload', function () {
+        if (pollInterval) clearInterval(pollInterval);
+        if (timeInterval) clearInterval(timeInterval);
+        if (pumpTimer) clearTimeout(pumpTimer);
+        if (stream) stopCamera();
+    });
+</script>
+</body>
+
+</html>
